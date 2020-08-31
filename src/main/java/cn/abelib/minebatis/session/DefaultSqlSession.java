@@ -1,7 +1,10 @@
 package cn.abelib.minebatis.session;
 
+import cn.abelib.minebatis.Configuration;
+import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.io.XNode;
-
+import cn.abelib.minebatis.todo.BoundSql;
+import cn.abelib.minebatis.todo.MappedStatement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -14,7 +17,9 @@ import java.util.*;
  */
 public class DefaultSqlSession implements SqlSession {
     private Connection connection;
+    private Executor executor;
     private Map<String, XNode> mapperElement;
+    private Configuration configuration;
 
     public DefaultSqlSession(Connection connection, Map<String, XNode> mapperElement) {
         this.connection = connection;
@@ -62,9 +67,29 @@ public class DefaultSqlSession implements SqlSession {
         return new ArrayList<>();
     }
 
+    public <T> List<T> selectList(String statement, Object parameter, BoundSql boundSql) {
+        try {
+            MappedStatement ms = configuration.getMappedStatement(statement);
+            return executor.query(ms, parameter, boundSql);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return new ArrayList<>();
+    }
+
+    @Override
+    public <T> T getMapper(Class<T> type) {
+        return configuration.getMapper(type, this);
+    }
+
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public Configuration getConfiguration() {
+        return this.configuration;
     }
 
     private void buildParameter(PreparedStatement preparedStatement,

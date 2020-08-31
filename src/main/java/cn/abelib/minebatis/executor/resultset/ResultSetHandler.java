@@ -1,6 +1,5 @@
-package cn.abelib.minebatis.todo;
+package cn.abelib.minebatis.executor.resultset;
 
-import java.sql.CallableStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
@@ -11,7 +10,12 @@ import java.util.List;
  * 结果集映射
  */
 public interface ResultSetHandler {
+    /**
+     * 生成对应的结果对象集合
+     * @param stmt
+     * @param <E>
+     * @return
+     * @throws SQLException
+     */
     <E> List<E> handleResultSets(Statement stmt) throws SQLException;
-
-    void handleOutputParameters(CallableStatement cs) throws SQLException;
 }

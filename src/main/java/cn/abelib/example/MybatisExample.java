@@ -26,7 +26,6 @@ public class MybatisExample {
                 System.out.println(user);
             } finally {
                 session.close();
-                inputStream.close();
             }
         } catch (IOException e) {
             e.printStackTrace();

@@ -1,5 +1,7 @@
 package cn.abelib.minebatis.session;
 
+import cn.abelib.minebatis.Configuration;
+
 import java.io.Closeable;
 import java.util.List;
 
@@ -16,6 +18,10 @@ public interface SqlSession extends Closeable {
 
     <T> List<T> selectList(String statement, Object parameter);
 
+    <T> T getMapper(Class<T> type);
+
     @Override
     void close();
+
+    Configuration getConfiguration();
 }
