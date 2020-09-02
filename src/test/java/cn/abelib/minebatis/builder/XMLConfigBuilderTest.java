@@ -1,5 +1,7 @@
-package cn.abelib.minebatis.io;
+package cn.abelib.minebatis.builder;
 
+import cn.abelib.minebatis.builder.XMLConfigBuilder;
+import cn.abelib.minebatis.io.Resources;
 import org.junit.Before;
 import org.junit.Test;
 

@@ -1,4 +1,4 @@
-package cn.abelib.minebatis.todo;
+package cn.abelib.example;
 
 /**
  * @Author: abel.huang

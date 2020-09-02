@@ -1,8 +1,7 @@
 package cn.abelib.minebatis.executor.statement;
 
 import cn.abelib.minebatis.executor.Executor;
-import cn.abelib.minebatis.todo.BoundSql;
-import cn.abelib.minebatis.todo.MappedStatement;
+import cn.abelib.minebatis.mapping.MappedStatement;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,12 +17,12 @@ import java.util.List;
  */
 public class SimpleStatementHandler implements StatementHandler {
 
-    public SimpleStatementHandler(Executor executor, MappedStatement ms, Object parameter, BoundSql boundSql) {
+    public SimpleStatementHandler(Executor executor, MappedStatement ms, Object parameter, String boundSql) {
 
     }
 
     @Override
-    public int update(Statement statement, BoundSql boundSql) throws SQLException {
+    public int update(Statement statement, String boundSql) throws SQLException {
         return 0;
     }
 

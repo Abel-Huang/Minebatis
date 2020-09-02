@@ -11,6 +11,8 @@ import java.io.Reader;
  * @date 2020/7/3 10:29
  */
 public class Resources {
+    private static ClassLoaderWrapper classLoaderWrapper = new ClassLoaderWrapper();
+
     public static Reader getResourceAsReader(String resource)throws IOException {
         return new InputStreamReader(getResourceAsStream(resource));
     }
@@ -30,4 +32,9 @@ public class Resources {
                 ClassLoader.getSystemClassLoader(),
                 Thread.currentThread().getContextClassLoader()};
     }
+
+    public static Class<?> classForName(String className) throws ClassNotFoundException {
+        return classLoaderWrapper.classForName(className);
+    }
+
 }

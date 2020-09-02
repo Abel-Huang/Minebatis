@@ -28,7 +28,7 @@ public class MapperProxy<T> implements InvocationHandler {
         if (Object.class.equals(method.getDeclaringClass())) {
             return method.invoke(this, args);
         }
-        // 省略针对Java7以上的动态语言支持, interface的default方法
+        // 省略针对Java8中interface的default方法支持
         final MapperMethod mapperMethod = cachedMapperMethod(method);
         return mapperMethod.execute(sqlSession, args);
     }
@@ -36,7 +36,6 @@ public class MapperProxy<T> implements InvocationHandler {
     private MapperMethod cachedMapperMethod(Method method) {
         MapperMethod mapperMethod = methodCache.get(method);
         if (Objects.isNull(mapperMethod)) {
-            // todo mapperMethod的设计
             mapperMethod = new MapperMethod(mapperInterface, method, sqlSession.getConfiguration());
             methodCache.put(method, mapperMethod);
         }

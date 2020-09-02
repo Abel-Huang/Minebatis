@@ -29,13 +29,14 @@ public class MapperRegistry {
             }
         }
         knownMappers.put(type, new MapperProxyFactory<>(type));
-        // todo 注解的处理暂时不支持
+        // 注解的处理暂时不支持
     }
 
-    private <T> boolean hasMapper(Class<T> type) {
+    public <T> boolean hasMapper(Class<T> type) {
         return knownMappers.containsKey(type);
     }
 
+    @SuppressWarnings("unchecked")
     public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
         final MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory<T>) knownMappers.get(type);
         // 如果为空则抛出异常
@@ -44,5 +45,4 @@ public class MapperRegistry {
         }
         return mapperProxyFactory.newInstance(sqlSession);
     }
-
 }

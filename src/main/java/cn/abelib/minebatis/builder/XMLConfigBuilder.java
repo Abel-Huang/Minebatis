@@ -1,4 +1,4 @@
-package cn.abelib.minebatis.io;
+package cn.abelib.minebatis.builder;
 
 import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.utils.StringUtils;
@@ -91,7 +91,6 @@ public class XMLConfigBuilder {
      */
     private void mapperElement(Element root) {
         XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(configuration);
-        Map<String, XNode> mapperElement = xmlMapperBuilder.parse(root);
-        configuration.setMapperElement(mapperElement);
+        xmlMapperBuilder.parse(root);
     }
 }

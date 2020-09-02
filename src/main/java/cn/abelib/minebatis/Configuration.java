@@ -5,15 +5,14 @@ import cn.abelib.minebatis.executor.CachingExecutor;
 import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.executor.SimpleExecutor;
 import cn.abelib.minebatis.executor.statement.SimpleStatementHandler;
-import cn.abelib.minebatis.io.XNode;
 import cn.abelib.minebatis.session.SqlSession;
-import cn.abelib.minebatis.todo.BoundSql;
-import cn.abelib.minebatis.todo.MappedStatement;
+import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.executor.statement.StatementHandler;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -22,13 +21,14 @@ import java.util.Map;
  */
 public class Configuration {
     private Map<String, String> dataSource;
-    private Map<String, XNode> mapperElement;
     private boolean cacheEnabled;
-
-    /**
-     * todo
-     */
+    private Map<String, MappedStatement> mappedStatements;
     private MapperRegistry mapperRegistry;
+
+    public Configuration() {
+        mapperRegistry = new MapperRegistry(this);
+        mappedStatements = new HashMap<>();
+    }
 
     public void setDataSource(Map<String, String> dataSource) {
         this.dataSource = dataSource;
@@ -53,16 +53,8 @@ public class Configuration {
         return null;
     }
 
-    public void setMapperElement(Map<String, XNode> mapperElement) {
-        this.mapperElement = mapperElement;
-    }
-
-    public Map<String, XNode> getMapperElement() {
-        return mapperElement;
-    }
-
-    public MappedStatement getMappedStatement(String statement) {
-        return null;
+    public MappedStatement getMappedStatement(String id) {
+        return mappedStatements.get(id);
     }
 
     /**
@@ -73,14 +65,14 @@ public class Configuration {
      * @param boundSql
      * @return
      */
-    public StatementHandler newStatementHandler(Executor executor,  MappedStatement ms, Object parameter, BoundSql boundSql) {
+    public StatementHandler newStatementHandler(Executor executor,  MappedStatement ms, Object parameter, String boundSql) {
         StatementHandler statementHandler = new SimpleStatementHandler(executor, ms, parameter, boundSql);
 
         return statementHandler;
     }
 
     public boolean hasStatement(String statementName) {
-        return false;
+        return mappedStatements.containsKey(statementName);
     }
 
     public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
@@ -88,6 +80,7 @@ public class Configuration {
     }
 
     /**
+     *  todo
      * 仅支持SimpleExecutor
      * @return
      */
@@ -103,12 +96,16 @@ public class Configuration {
         this.cacheEnabled = cacheEnabled;
     }
 
-    public boolean hasMapper(Class<?> boundType) {
-        return false;
+    public boolean hasMapper(Class<?> type) {
+        return mapperRegistry.hasMapper(type);
     }
 
     public void addLoadedResource(String namespace) {
 
+    }
+
+    public void addMappedStatement(MappedStatement ms) {
+        mappedStatements.put(ms.getId(), ms);
     }
 
     /**
@@ -118,5 +115,9 @@ public class Configuration {
      */
     public <T> void addMapper(Class<T> type) {
         mapperRegistry.addMapper(type);
+    }
+
+    public Map<String, MappedStatement> getMappedStatements() {
+        return this.mappedStatements;
     }
 }

@@ -2,8 +2,7 @@ package cn.abelib.minebatis.executor;
 
 import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.cache.CacheKey;
-import cn.abelib.minebatis.todo.BoundSql;
-import cn.abelib.minebatis.todo.MappedStatement;
+import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.executor.statement.StatementHandler;
 
 import java.sql.Connection;
@@ -23,16 +22,16 @@ public class SimpleExecutor implements Executor {
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey, BoundSql boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey, String boundSql) throws SQLException {
         return null;
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, BoundSql boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter, String boundSql) throws SQLException {
         return doQuery(ms, parameter, boundSql);
     }
 
-    private <E> List<E> doQuery(MappedStatement ms, Object parameter, BoundSql boundSql) throws SQLException {
+    private <E> List<E> doQuery(MappedStatement ms, Object parameter, String boundSql) throws SQLException {
         Statement stmt = null;
         try {
             Configuration configuration = ms.getConfiguration();

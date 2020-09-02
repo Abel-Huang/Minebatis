@@ -1,8 +1,7 @@
 package cn.abelib.minebatis.executor;
 
 import cn.abelib.minebatis.cache.CacheKey;
-import cn.abelib.minebatis.todo.BoundSql;
-import cn.abelib.minebatis.todo.MappedStatement;
+import cn.abelib.minebatis.mapping.MappedStatement;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -23,12 +22,12 @@ public class CachingExecutor implements Executor {
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey, BoundSql boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey, String boundSql) throws SQLException {
         return null;
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, BoundSql boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter, String boundSql) throws SQLException {
         return null;
     }
 }

@@ -1,8 +1,6 @@
 package cn.abelib.minebatis.executor.statement;
 
 
-import cn.abelib.minebatis.todo.BoundSql;
-
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,7 +11,7 @@ import java.util.List;
  * @date 2020/8/7 21:06
  */
 public interface StatementHandler {
-    int update(Statement statement, BoundSql boundSql) throws SQLException;
+    int update(Statement statement, String boundSql) throws SQLException;
 
     <E> List<E> query(Statement statement) throws SQLException;
 

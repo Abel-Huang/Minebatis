@@ -1,6 +1,9 @@
-package cn.abelib.minebatis.io;
+package cn.abelib.minebatis.builder;
 
-import com.google.common.collect.Maps;
+import cn.abelib.minebatis.Configuration;
+import cn.abelib.minebatis.io.Resources;
+import cn.abelib.minebatis.mapping.MappedStatement;
+import cn.abelib.minebatis.mapping.SqlCommandType;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
@@ -20,9 +23,19 @@ import java.util.regex.Pattern;
  */
 public class XMLStatementBuilder {
     private final String SQL_PATTERN = "(#\\{(.*?)})";
+    private Configuration configuration;
+    private MapperBuilderAssistant builderAssistant;
 
-    public Map<String, XNode> parseStatementNode(String resource) {
-        Map<String, XNode> map = Maps.newHashMap();
+    public XMLStatementBuilder(Configuration configuration, MapperBuilderAssistant builderAssistant) {
+        this.configuration = configuration;
+        this.builderAssistant = builderAssistant;
+    }
+
+    /**
+     * todo 后面需要继续完善和拆分
+     * @param resource
+     */
+    public void parseStatementNode(String resource) {
         try {
             Reader reader = Resources.getResourceAsReader(resource);
             SAXReader saxReader = new SAXReader();
@@ -47,19 +60,16 @@ public class XMLStatementBuilder {
                     parameter.put(i, g2);
                     sql = sql.replace(g1, "?");
                 }
-                XNode xNode = new XNode();
-                xNode.setNamespace(namespace);
-                xNode.setId(id);
-                xNode.setParameterType(parameterType);
-                xNode.setResultType(resultType);
-                xNode.setSql(sql);
-                xNode.setParameter(parameter);
+                String msId = namespace + "." + id;
+                MappedStatement.Builder mappedStatementBuilder = new MappedStatement
+                        .Builder(configuration, msId, SqlCommandType.SELECT, sql, parameter, parameterType,resultType);
+                MappedStatement mappedStatement = mappedStatementBuilder.build();
 
-                map.put(namespace + "." + id, xNode);
+                configuration.addMappedStatement(mappedStatement);
+                builderAssistant.setCurrentNamespace(namespace);
             }
         } catch (Exception ex) {
             ex.printStackTrace();
         }
-        return map;
     }
 }

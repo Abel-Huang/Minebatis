@@ -1,4 +1,4 @@
-package cn.abelib.minebatis.utils;
+package cn.abelib.minebatis.io;
 
 import java.io.InputStream;
 

@@ -2,9 +2,7 @@ package cn.abelib.minebatis.session;
 
 import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.executor.Executor;
-import cn.abelib.minebatis.io.XNode;
-import cn.abelib.minebatis.todo.BoundSql;
-import cn.abelib.minebatis.todo.MappedStatement;
+import cn.abelib.minebatis.mapping.MappedStatement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.sql.*;
@@ -18,12 +16,16 @@ import java.util.*;
 public class DefaultSqlSession implements SqlSession {
     private Connection connection;
     private Executor executor;
-    private Map<String, XNode> mapperElement;
     private Configuration configuration;
+    private Map<String, MappedStatement> mappedStatements;
 
-    public DefaultSqlSession(Connection connection, Map<String, XNode> mapperElement) {
+    /**
+     * todo init
+     * @param connection
+     */
+    public DefaultSqlSession(Connection connection) {
         this.connection = connection;
-        this.mapperElement = mapperElement;
+        this.mappedStatements = configuration.getMappedStatements();
     }
 
     @Override
@@ -33,13 +35,13 @@ public class DefaultSqlSession implements SqlSession {
 
     @Override
     public <T> T selectOne(String statement, Object parameter) {
-        XNode xNode = mapperElement.get(statement);
-        Map<Integer, String> parameterMap = xNode.getParameter();
+        MappedStatement mappedStatement = mappedStatements.get(statement);
+        Map<Integer, String> parameterMap = mappedStatement.getParameter();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(xNode.getSql());
+            PreparedStatement preparedStatement = connection.prepareStatement(mappedStatement.getSql());
             buildParameter(preparedStatement, parameter, parameterMap);
             ResultSet resultSet = preparedStatement.executeQuery();
-            List<T> objects = resultSet2Obj(resultSet, Class.forName(xNode.getResultType()));
+            List<T> objects = resultSetConverter(resultSet, Class.forName(mappedStatement.getResultType()));
             return objects.get(0);
         } catch (Exception e) {
             e.printStackTrace();
@@ -54,20 +56,20 @@ public class DefaultSqlSession implements SqlSession {
 
     @Override
     public <T> List<T> selectList(String statement, Object parameter) {
-        XNode xNode = mapperElement.get(statement);
-        Map<Integer, String> parameterMap = xNode.getParameter();
+        MappedStatement mappedStatement = mappedStatements.get(statement);
+        Map<Integer, String> parameterMap = mappedStatement.getParameter();
         try {
-            PreparedStatement preparedStatement = connection.prepareStatement(xNode.getSql());
+            PreparedStatement preparedStatement = connection.prepareStatement(mappedStatement.getSql());
             buildParameter(preparedStatement, parameter, parameterMap);
             ResultSet resultSet = preparedStatement.executeQuery();
-            return resultSet2Obj(resultSet, Class.forName(xNode.getResultType()));
+            return resultSetConverter(resultSet, Class.forName(mappedStatement.getResultType()));
         } catch (Exception e) {
             e.printStackTrace();
         }
         return new ArrayList<>();
     }
 
-    public <T> List<T> selectList(String statement, Object parameter, BoundSql boundSql) {
+    public <T> List<T> selectList(String statement, Object parameter, String boundSql) {
         try {
             MappedStatement ms = configuration.getMappedStatement(statement);
             return executor.query(ms, parameter, boundSql);
@@ -77,6 +79,12 @@ public class DefaultSqlSession implements SqlSession {
         return new ArrayList<>();
     }
 
+    /**
+     * 获得Mapper
+     * @param type
+     * @param <T>
+     * @return
+     */
     @Override
     public <T> T getMapper(Class<T> type) {
         return configuration.getMapper(type, this);
@@ -160,7 +168,7 @@ public class DefaultSqlSession implements SqlSession {
         }
     }
 
-    private <T> List<T> resultSet2Obj(ResultSet resultSet, Class<?> clazz) {
+    private <T> List<T> resultSetConverter(ResultSet resultSet, Class<?> clazz) {
         List<T> list = new ArrayList<>();
         try {
             ResultSetMetaData metaData = resultSet.getMetaData();

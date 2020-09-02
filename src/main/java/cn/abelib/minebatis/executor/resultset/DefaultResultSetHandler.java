@@ -2,8 +2,8 @@ package cn.abelib.minebatis.executor.resultset;
 
 import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.executor.Executor;
-import cn.abelib.minebatis.todo.MappedStatement;
-import cn.abelib.minebatis.todo.ResultMap;
+import cn.abelib.minebatis.mapping.MappedStatement;
+import cn.abelib.example.ResultMap;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
