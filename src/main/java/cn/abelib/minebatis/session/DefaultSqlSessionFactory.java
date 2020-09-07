@@ -1,8 +1,6 @@
 package cn.abelib.minebatis.session;
 
 
-import cn.abelib.minebatis.Configuration;
-
 /**
  * @author abel.huang
  * @date 2020/8/6 13:42
@@ -16,7 +14,7 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
     @Override
     public SqlSession openSession() {
-        return new DefaultSqlSession(configuration.getConnection());
+        return new DefaultSqlSession(configuration);
     }
 }
 

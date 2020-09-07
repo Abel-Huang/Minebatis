@@ -1,9 +1,7 @@
 package cn.abelib.minebatis.mapping;
 
-import cn.abelib.minebatis.Configuration;
-import cn.abelib.example.ResultMap;
+import cn.abelib.minebatis.session.Configuration;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,8 +22,6 @@ public class MappedStatement {
     private String parameterType;
     private String resultType;
 
-    private List<ResultMap> resultMaps;
-    private String[] resultSets;
 
     private MappedStatement() {
         // private constructor
@@ -79,12 +75,12 @@ public class MappedStatement {
         return sqlCommandType;
     }
 
-    public List<ResultMap> getResultMaps() {
-        return resultMaps;
-    }
-
-    public String[] getResultSets() {
-        return resultSets;
+    /**
+     * todo
+     * @return
+     */
+    public int getFetchSize() {
+        return 100;
     }
 
     /**

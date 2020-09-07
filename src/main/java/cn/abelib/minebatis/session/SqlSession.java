@@ -1,7 +1,5 @@
 package cn.abelib.minebatis.session;
 
-import cn.abelib.minebatis.Configuration;
-
 import java.io.Closeable;
 import java.util.List;
 

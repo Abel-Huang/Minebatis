@@ -1,7 +1,7 @@
 package cn.abelib.minebatis.binding;
 
 
-import cn.abelib.minebatis.Configuration;
+import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.mapping.SqlCommandType;
 import cn.abelib.minebatis.session.SqlSession;
 import cn.abelib.minebatis.mapping.MappedStatement;
@@ -136,13 +136,11 @@ public class MapperMethod {
      */
     public static class MethodSignature {
         private final boolean returnsMany;
-        private final boolean returnsMap;
         private final Class<?> returnsType;
 
         private final ParamNameResolver paramNameResolver;
 
         /**
-         * todo 关于返回值的处理
          * 解析参数列表
          * @param configuration
          * @param mapperInterface
@@ -159,12 +157,17 @@ public class MapperMethod {
             }
 
             this.returnsMany = this.returnsType.isArray() || Collection.class.isAssignableFrom(this.returnsType);
-            this.returnsMap = false;
             this.paramNameResolver = new ParamNameResolver(method);
         }
 
+        /**
+         * todo 后续会将参数转换移到这里, 增加多个参数的处理
+         *
+         * @param args
+         * @return
+         */
         public Object convertArgsToSqlCommandParam(Object[] args) {
-            return null;
+            return args[0];
         }
     }
 }

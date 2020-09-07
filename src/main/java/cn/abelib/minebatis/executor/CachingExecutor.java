@@ -22,12 +22,12 @@ public class CachingExecutor implements Executor {
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey, String boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter, CacheKey cacheKey) throws SQLException {
         return null;
     }
 
     @Override
-    public <E> List<E> query(MappedStatement ms, Object parameter, String boundSql) throws SQLException {
+    public <E> List<E> query(MappedStatement ms, Object parameter) throws SQLException {
         return null;
     }
 }

@@ -11,11 +11,11 @@ import java.util.List;
  * @date 2020/8/7 21:06
  */
 public interface StatementHandler {
-    int update(Statement statement, String boundSql) throws SQLException;
+    int update(Statement statement) throws SQLException;
 
     <E> List<E> query(Statement statement) throws SQLException;
 
     Statement prepare(Connection connection);
 
-    void parameterize(Statement stmt);
+    void parameterize(Statement stmt) throws SQLException, IllegalAccessException;
 }

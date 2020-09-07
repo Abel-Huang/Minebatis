@@ -1,6 +1,6 @@
 package cn.abelib.minebatis.builder;
 
-import cn.abelib.minebatis.Configuration;
+import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.utils.StringUtils;
 import org.dom4j.Document;
 import org.dom4j.DocumentException;

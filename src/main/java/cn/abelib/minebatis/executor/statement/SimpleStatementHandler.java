@@ -1,13 +1,11 @@
 package cn.abelib.minebatis.executor.statement;
 
-import cn.abelib.minebatis.executor.Executor;
+import cn.abelib.minebatis.executor.parameter.ParameterHandler;
+import cn.abelib.minebatis.executor.resultset.ResultSetHandler;
 import cn.abelib.minebatis.mapping.MappedStatement;
+import cn.abelib.minebatis.session.Configuration;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
+import java.sql.*;
 import java.util.List;
 
 /**
@@ -16,21 +14,29 @@ import java.util.List;
  * todo
  */
 public class SimpleStatementHandler implements StatementHandler {
+    private final MappedStatement mappedStatement;
+    private final ParameterHandler parameterHandler;
+    private final Configuration configuration;
+    private final ResultSetHandler resultSetHandler;
 
-    public SimpleStatementHandler(Executor executor, MappedStatement ms, Object parameter, String boundSql) {
-
+    public SimpleStatementHandler(MappedStatement ms, Object parameter) throws ClassNotFoundException {
+        this.mappedStatement = ms;
+        this.configuration = mappedStatement.getConfiguration();
+        this.parameterHandler = configuration.newParameterHandler(mappedStatement, parameter);
+        this.resultSetHandler = configuration.newResultSetHandler(mappedStatement);
     }
 
     @Override
-    public int update(Statement statement, String boundSql) throws SQLException {
+    public int update(Statement statement) throws SQLException {
         return 0;
     }
 
     @Override
     public <E> List<E> query(Statement statement) throws SQLException {
         PreparedStatement ps = (PreparedStatement) statement;
+        // 执行SQL
         ps.execute();
-        return new ArrayList<>();
+        return resultSetHandler.handleResultSets(ps);
     }
 
     /**
@@ -40,9 +46,11 @@ public class SimpleStatementHandler implements StatementHandler {
      */
     @Override
     public Statement prepare(Connection connection) {
-        Statement statement = null;
+        Statement statement;
         try {
-            statement = connection.prepareStatement("");
+            statement = connection.prepareStatement(mappedStatement.getSql());
+            statement.setFetchSize(mappedStatement.getFetchSize());
+            return statement;
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -50,7 +58,7 @@ public class SimpleStatementHandler implements StatementHandler {
     }
 
     @Override
-    public void parameterize(Statement stmt) {
-
+    public void parameterize(Statement stmt) throws SQLException, IllegalAccessException {
+        parameterHandler.setParameters((PreparedStatement) stmt);
     }
 }

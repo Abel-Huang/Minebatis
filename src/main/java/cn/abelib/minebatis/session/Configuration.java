@@ -1,11 +1,13 @@
-package cn.abelib.minebatis;
+package cn.abelib.minebatis.session;
 
 import cn.abelib.minebatis.binding.MapperRegistry;
-import cn.abelib.minebatis.executor.CachingExecutor;
 import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.executor.SimpleExecutor;
+import cn.abelib.minebatis.executor.parameter.DefaultParameterHandler;
+import cn.abelib.minebatis.executor.parameter.ParameterHandler;
+import cn.abelib.minebatis.executor.resultset.DefaultResultSetHandler;
+import cn.abelib.minebatis.executor.resultset.ResultSetHandler;
 import cn.abelib.minebatis.executor.statement.SimpleStatementHandler;
-import cn.abelib.minebatis.session.SqlSession;
 import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.executor.statement.StatementHandler;
 
@@ -26,7 +28,7 @@ public class Configuration {
     private MapperRegistry mapperRegistry;
 
     public Configuration() {
-        mapperRegistry = new MapperRegistry(this);
+        mapperRegistry = new MapperRegistry();
         mappedStatements = new HashMap<>();
     }
 
@@ -59,16 +61,12 @@ public class Configuration {
 
     /**
      * todo
-     * @param executor
      * @param ms
      * @param parameter
-     * @param boundSql
      * @return
      */
-    public StatementHandler newStatementHandler(Executor executor,  MappedStatement ms, Object parameter, String boundSql) {
-        StatementHandler statementHandler = new SimpleStatementHandler(executor, ms, parameter, boundSql);
-
-        return statementHandler;
+    public StatementHandler newStatementHandler(MappedStatement ms, Object parameter) throws ClassNotFoundException {
+        return new SimpleStatementHandler(ms, parameter);
     }
 
     public boolean hasStatement(String statementName) {
@@ -81,13 +79,14 @@ public class Configuration {
 
     /**
      *  todo
+     *  cacheing
      * 仅支持SimpleExecutor
      * @return
      */
     public Executor newExecutor() {
         Executor executor = new SimpleExecutor();
         if (cacheEnabled) {
-            executor = new CachingExecutor(executor);
+            //executor = new CachingExecutor(executor);
         }
         return executor;
     }
@@ -100,12 +99,20 @@ public class Configuration {
         return mapperRegistry.hasMapper(type);
     }
 
+    /**
+     * todo unuse now
+     * @param namespace
+     */
     public void addLoadedResource(String namespace) {
 
     }
 
     public void addMappedStatement(MappedStatement ms) {
         mappedStatements.put(ms.getId(), ms);
+    }
+
+    public ResultSetHandler newResultSetHandler(MappedStatement mappedStatement) throws ClassNotFoundException {
+        return new DefaultResultSetHandler(mappedStatement);
     }
 
     /**
@@ -119,5 +126,15 @@ public class Configuration {
 
     public Map<String, MappedStatement> getMappedStatements() {
         return this.mappedStatements;
+    }
+
+    /**
+     * 新建参数处理器
+     * @param mappedStatement
+     * @param parameter
+     * @return
+     */
+    public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameter) {
+        return new DefaultParameterHandler(mappedStatement, parameter);
     }
 }

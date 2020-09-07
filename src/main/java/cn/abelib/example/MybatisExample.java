@@ -13,22 +13,34 @@ import java.io.InputStream;
  * @date 2020/5/19 11:39
  */
 public class MybatisExample {
-    public static void main(String[] args) {
+    private static SqlSession session;
+
+    static {
         String resource = "mybatis-config.xml";
         InputStream inputStream;
         try {
             inputStream = Resources.getResourceAsStream(resource);
             SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
 
-            SqlSession session = sqlSessionFactory.openSession();
-            try {
-                Student user = session.selectOne("cn.abelib.example.IStudentDao.queryUserInfoById", 1L);
-                System.out.println(user);
-            } finally {
-                session.close();
-            }
+            session = sqlSessionFactory.openSession();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+        mapperTest();
+    }
+
+    private static void sessionTest() {
+        Student user = session.selectOne("cn.abelib.example.StudentMapper.queryUserInfoById",
+                1L);
+        System.out.println(user);
+    }
+
+    private static void mapperTest() {
+        StudentMapper studentDao = session.getMapper(StudentMapper.class);
+        Student user = studentDao.queryUserInfoById(3L);
+        System.out.println(user);
     }
 }

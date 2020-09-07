@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.abelib.example.IStudentDao">
+<mapper namespace="cn.abelib.example.StudentMapper">
     <select id="queryUserInfoById" parameterType="java.lang.Long" resultType="cn.abelib.example.Student">
     select * from student where id = #{id}
     </select>

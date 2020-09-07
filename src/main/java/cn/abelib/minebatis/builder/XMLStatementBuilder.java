@@ -1,6 +1,6 @@
 package cn.abelib.minebatis.builder;
 
-import cn.abelib.minebatis.Configuration;
+import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.io.Resources;
 import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.mapping.SqlCommandType;

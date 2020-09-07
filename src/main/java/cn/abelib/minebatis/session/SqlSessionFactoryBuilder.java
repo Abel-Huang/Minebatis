@@ -1,6 +1,5 @@
 package cn.abelib.minebatis.session;
 
-import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.builder.XMLConfigBuilder;
 
 import java.io.IOException;

@@ -1,6 +1,5 @@
 package cn.abelib.minebatis.binding;
 
-import cn.abelib.minebatis.Configuration;
 import cn.abelib.minebatis.session.SqlSession;
 import com.google.common.collect.Maps;
 
@@ -13,12 +12,9 @@ import java.util.Objects;
  * 优先支持 Mapper方式
  */
 public class MapperRegistry {
-    private final Configuration configuration;
-
     private final Map<Class<?>, MapperProxyFactory<?>> knownMappers = Maps.newHashMap();
 
-    public MapperRegistry(Configuration configuration) {
-        this.configuration = configuration;
+    public MapperRegistry() {
     }
 
     public <T> void addMapper(Class<T> type) {
