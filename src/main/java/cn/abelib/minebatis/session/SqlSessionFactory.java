@@ -7,4 +7,5 @@ package cn.abelib.minebatis.session;
 public interface SqlSessionFactory {
     SqlSession openSession();
 
+    SqlSession openSession(boolean autoCommit);
 }

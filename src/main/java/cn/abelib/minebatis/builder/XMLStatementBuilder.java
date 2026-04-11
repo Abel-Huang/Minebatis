@@ -1,5 +1,7 @@
 package cn.abelib.minebatis.builder;
 
+import cn.abelib.minebatis.cache.Cache;
+import cn.abelib.minebatis.cache.PerpetualCache;
 import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.io.Resources;
 import cn.abelib.minebatis.mapping.MappedStatement;
@@ -17,14 +19,16 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * @Author: abel.huang
- * @Date: 2020-08-18 23:06
+ * @author abel.huang
+ * @date 2020-08-18 23:06
  * 解析SQL节点
  */
 public class XMLStatementBuilder {
-    private final String SQL_PATTERN = "(#\\{(.*?)})";
-    private Configuration configuration;
-    private MapperBuilderAssistant builderAssistant;
+
+    private static final String SQL_PATTERN = "(#\\{(.*?)})";
+
+    private final Configuration configuration;
+    private final MapperBuilderAssistant builderAssistant;
 
     public XMLStatementBuilder(Configuration configuration, MapperBuilderAssistant builderAssistant) {
         this.configuration = configuration;
@@ -32,8 +36,8 @@ public class XMLStatementBuilder {
     }
 
     /**
-     * todo 后面需要继续完善和拆分
-     * @param resource
+     * 解析 Mapper XML 文件
+     * @param resource 资源路径
      */
     public void parseStatementNode(String resource) {
         try {
@@ -41,35 +45,88 @@ public class XMLStatementBuilder {
             SAXReader saxReader = new SAXReader();
             Document document = saxReader.read(new InputSource(reader));
             Element root = document.getRootElement();
-            //命名空间
-            String namespace = root.attributeValue("namespace");
-            // SELECT todo 其他的语句 INSERT DELETE UPDATE 其他节点
-            List<Element> selectNodes = root.selectNodes("select");
-            for (Element node : selectNodes) {
-                String id = node.attributeValue("id");
-                String parameterType = node.attributeValue("parameterType");
-                String resultType = node.attributeValue("resultType");
-                String sql = node.getText().trim();
-                // ? 匹配
-                Map<Integer, String> parameter = new HashMap<>();
-                Pattern pattern = Pattern.compile(SQL_PATTERN);
-                Matcher matcher = pattern.matcher(sql);
-                for (int i = 1; matcher.find(); i++) {
-                    String g1 = matcher.group(1);
-                    String g2 = matcher.group(2);
-                    parameter.put(i, g2);
-                    sql = sql.replace(g1, "?");
-                }
-                String msId = namespace + "." + id;
-                MappedStatement.Builder mappedStatementBuilder = new MappedStatement
-                        .Builder(configuration, msId, SqlCommandType.SELECT, sql, parameter, parameterType,resultType);
-                MappedStatement mappedStatement = mappedStatementBuilder.build();
 
-                configuration.addMappedStatement(mappedStatement);
-                builderAssistant.setCurrentNamespace(namespace);
-            }
+            // 命名空间
+            String namespace = root.attributeValue("namespace");
+            builderAssistant.setCurrentNamespace(namespace);
+
+            // 解析 <cache> 标签（二级缓存）
+            cacheElement(root, namespace);
+
+            // 解析 SQL 语句
+            parseStatements(root, namespace);
         } catch (Exception ex) {
             ex.printStackTrace();
+        }
+    }
+
+    /**
+     * 解析所有 SQL 语句
+     */
+    private void parseStatements(Element root, String namespace) {
+        // 解析 select
+        parseStatement(root, namespace, "select", SqlCommandType.SELECT);
+
+        // 解析 insert
+        parseStatement(root, namespace, "insert", SqlCommandType.INSERT);
+
+        // 解析 update
+        parseStatement(root, namespace, "update", SqlCommandType.UPDATE);
+
+        // 解析 delete
+        parseStatement(root, namespace, "delete", SqlCommandType.DELETE);
+    }
+
+    /**
+     * 解析指定类型的 SQL 语句
+     */
+    private void parseStatement(Element root, String namespace, String tagName, String sqlCommandType) {
+        List<Element> nodes = root.selectNodes(tagName);
+        for (Element node : nodes) {
+            String id = node.attributeValue("id");
+            String parameterType = node.attributeValue("parameterType");
+            String resultType = node.attributeValue("resultType");
+            String sql = node.getText().trim();
+
+            // 参数解析
+            Map<Integer, String> parameter = new HashMap<>();
+            Pattern pattern = Pattern.compile(SQL_PATTERN);
+            Matcher matcher = pattern.matcher(sql);
+            String parsedSql = sql;
+            for (int i = 1; matcher.find(); i++) {
+                String g1 = matcher.group(1);
+                String g2 = matcher.group(2);
+                parameter.put(i, g2);
+                parsedSql = parsedSql.replace(g1, "?");
+            }
+
+            String msId = namespace + "." + id;
+
+            // 获取该 namespace 的缓存
+            Cache cache = configuration.getCache(namespace);
+
+            MappedStatement.Builder mappedStatementBuilder = new MappedStatement.Builder(
+                    configuration, msId, sqlCommandType, parsedSql, parameter, parameterType, resultType);
+
+            // 设置缓存
+            if (cache != null) {
+                mappedStatementBuilder.cache(cache);
+            }
+
+            MappedStatement mappedStatement = mappedStatementBuilder.build();
+            configuration.addMappedStatement(mappedStatement);
+        }
+    }
+
+    /**
+     * 解析 <cache> 标签
+     */
+    private void cacheElement(Element root, String namespace) {
+        Element cacheElement = (Element) root.selectSingleNode("cache");
+        if (cacheElement != null) {
+            // 创建缓存实例
+            Cache cache = new PerpetualCache(namespace);
+            configuration.addCache(namespace, cache);
         }
     }
 }

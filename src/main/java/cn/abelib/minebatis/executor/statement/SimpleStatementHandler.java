@@ -9,11 +9,12 @@ import java.sql.*;
 import java.util.List;
 
 /**
- * @Author: abel.huang
- * @Date: 2020-08-18 00:07
- * todo
+ * @author abel.huang
+ * @date 2020-08-18 00:07
+ * 简单 Statement 处理器实现
  */
 public class SimpleStatementHandler implements StatementHandler {
+
     private final MappedStatement mappedStatement;
     private final ParameterHandler parameterHandler;
     private final Configuration configuration;
@@ -28,22 +29,18 @@ public class SimpleStatementHandler implements StatementHandler {
 
     @Override
     public int update(Statement statement) throws SQLException {
-        return 0;
+        PreparedStatement ps = (PreparedStatement) statement;
+        ps.execute();
+        return ps.getUpdateCount();
     }
 
     @Override
     public <E> List<E> query(Statement statement) throws SQLException {
         PreparedStatement ps = (PreparedStatement) statement;
-        // 执行SQL
         ps.execute();
         return resultSetHandler.handleResultSets(ps);
     }
 
-    /**
-     * todo 参数设置
-     * @param connection
-     * @return
-     */
     @Override
     public Statement prepare(Connection connection) {
         Statement statement;
