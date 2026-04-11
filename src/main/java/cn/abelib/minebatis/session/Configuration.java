@@ -2,6 +2,8 @@ package cn.abelib.minebatis.session;
 
 import cn.abelib.minebatis.binding.MapperRegistry;
 import cn.abelib.minebatis.cache.Cache;
+import cn.abelib.minebatis.datasource.DataSource;
+import cn.abelib.minebatis.datasource.UnpooledDataSource;
 import cn.abelib.minebatis.executor.CachingExecutor;
 import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.executor.SimpleExecutor;
@@ -16,7 +18,6 @@ import cn.abelib.minebatis.transaction.JdbcTransaction;
 import cn.abelib.minebatis.transaction.Transaction;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +27,7 @@ import java.util.Map;
  * @date 2020/8/6 13:50
  */
 public class Configuration {
-    private Map<String, String> dataSource;
+    private DataSource dataSource;
     private boolean cacheEnabled;
     private Map<String, MappedStatement> mappedStatements;
     private MapperRegistry mapperRegistry;
@@ -38,26 +39,41 @@ public class Configuration {
         caches = new HashMap<>();
     }
 
-    public void setDataSource(Map<String, String> dataSource) {
+    /**
+     * 设置数据源配置（兼容 XML 配置）
+     */
+    public void setDataSource(Map<String, String> dataSourceConfig) {
+        this.dataSource = new UnpooledDataSource(
+                dataSourceConfig.get("driver"),
+                dataSourceConfig.get("url"),
+                dataSourceConfig.get("username"),
+                dataSourceConfig.get("password")
+        );
+    }
+
+    /**
+     * 设置数据源（支持注入第三方连接池）
+     */
+    public void setDataSource(DataSource dataSource) {
         this.dataSource = dataSource;
-        try {
-            Class.forName(dataSource.get("driver"));
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        }
+    }
+
+    /**
+     * 获取数据源
+     */
+    public DataSource getDataSource() {
+        return dataSource;
     }
 
     /**
      * 创建数据库连接
-     * @return
      */
     public Connection getConnection() {
         try {
-            return DriverManager.getConnection(dataSource.get("url"), dataSource.get("username"), dataSource.get("password"));
+            return dataSource.getConnection();
         } catch (SQLException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to get connection", e);
         }
-        return null;
     }
 
     public MappedStatement getMappedStatement(String id) {
@@ -155,10 +171,19 @@ public class Configuration {
     }
 
     /**
-     * 创建新事务
+     * 创建新事务（默认非自动提交）
      * @return Transaction
      */
     public Transaction newTransaction() {
-        return new JdbcTransaction(this);
+        return new JdbcTransaction(this, false);
+    }
+
+    /**
+     * 创建新事务
+     * @param autoCommit 是否自动提交
+     * @return Transaction
+     */
+    public Transaction newTransaction(boolean autoCommit) {
+        return new JdbcTransaction(this, autoCommit);
     }
 }

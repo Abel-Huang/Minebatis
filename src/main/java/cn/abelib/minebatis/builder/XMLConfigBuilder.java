@@ -6,7 +6,10 @@ import org.dom4j.Document;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -19,12 +22,30 @@ import java.util.Map;
  * 解析XMLConfig
  */
 public class XMLConfigBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(XMLConfigBuilder.class);
+
     private SAXReader saxReader;
     private Configuration configuration;
 
     public XMLConfigBuilder() {
-        this.saxReader = new SAXReader();
+        this.saxReader = createSAXReader();
         this.configuration = new Configuration();
+    }
+
+    /**
+     * 创建 SAXReader，禁用外部 DTD 加载
+     */
+    private SAXReader createSAXReader() {
+        SAXReader reader = new SAXReader();
+        try {
+            reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        } catch (SAXException e) {
+            log.warn("Failed to configure SAXReader security features", e);
+        }
+        return reader;
     }
 
     public Configuration parse(InputStream inputStream) {
@@ -33,9 +54,9 @@ public class XMLConfigBuilder {
             parseConfiguration(document.getRootElement());
             return configuration;
         } catch (DocumentException e) {
-            e.printStackTrace();
+            log.error("Failed to parse mybatis configuration", e);
+            throw new RuntimeException("Failed to parse mybatis configuration", e);
         }
-        return null;
     }
 
     /**
@@ -75,9 +96,8 @@ public class XMLConfigBuilder {
         List<Element> list = root.selectNodes("//dataSource");
         Map<String, String> dataSource = new HashMap<>(4);
         Element element = list.get(0);
-        List content = element.content();
-        for (Object o : content) {
-            Element e = (Element) o;
+        List<Element> properties = element.elements("property");
+        for (Element e : properties) {
             String name = e.attributeValue("name");
             String value = e.attributeValue("value");
             dataSource.put(name, value);

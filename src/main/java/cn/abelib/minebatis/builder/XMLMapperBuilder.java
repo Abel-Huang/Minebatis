@@ -3,6 +3,9 @@ package cn.abelib.minebatis.builder;
 import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.io.Resources;
 import org.dom4j.Element;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -12,6 +15,9 @@ import java.util.Objects;
  * 解析XMLMapper
  */
 public class XMLMapperBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(XMLMapperBuilder.class);
+
     private Configuration configuration;
     private MapperBuilderAssistant builderAssistant;
 
@@ -28,9 +34,8 @@ public class XMLMapperBuilder {
 
     private void mapperElement(List<Element> list) {
         Element element = list.get(0);
-        List content = element.content();
-        for (Object o : content) {
-            Element e = (Element) o;
+        List<Element> mappers = element.elements("mapper");
+        for (Element e : mappers) {
             String resource = e.attributeValue("resource");
             XMLStatementBuilder statementBuilder = new XMLStatementBuilder(configuration, builderAssistant);
             statementBuilder.parseStatementNode(resource);
@@ -38,7 +43,6 @@ public class XMLMapperBuilder {
     }
 
     /**
-     * todo 解析Mapper
      * Mapper接口绑定
      */
     private void bindMapperForNamespace() {
@@ -48,7 +52,8 @@ public class XMLMapperBuilder {
             try {
                 boundType = Resources.classForName(namespace);
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                log.warn("Mapper class not found: {}", namespace);
+                return;
             }
             if (Objects.nonNull(boundType)) {
                 // 检测当前类是否已经被绑定过
@@ -56,6 +61,7 @@ public class XMLMapperBuilder {
                     configuration.addLoadedResource("namespace" + namespace);
                     //绑定 mapper 类
                     configuration.addMapper(boundType);
+                    log.debug("Bound mapper: {}", namespace);
                 }
             }
         }
