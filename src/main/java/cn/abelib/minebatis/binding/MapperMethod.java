@@ -1,6 +1,5 @@
 package cn.abelib.minebatis.binding;
 
-
 import cn.abelib.minebatis.session.Configuration;
 import cn.abelib.minebatis.mapping.SqlCommandType;
 import cn.abelib.minebatis.session.SqlSession;
@@ -28,7 +27,7 @@ public class MapperMethod {
     }
 
     /**
-     * todo 具体执行增删改查
+     * 执行增删改查
      * @param sqlSession
      * @param args
      * @return
@@ -36,14 +35,16 @@ public class MapperMethod {
     public Object execute(SqlSession sqlSession, Object[] args) {
         Object result = null;
         switch (command.getType()) {
-            case SqlCommandType.INSERT:
-                // todo
+            case SqlCommandType.INSERT: {
+                Object param = signature.convertArgsToSqlCommandParam(args);
+                result = sqlSession.insert(command.getName(), param);
                 break;
-
-            case SqlCommandType.UPDATE:
-                // todo
+            }
+            case SqlCommandType.UPDATE: {
+                Object param = signature.convertArgsToSqlCommandParam(args);
+                result = sqlSession.update(command.getName(), param);
                 break;
-
+            }
             case SqlCommandType.SELECT:
                 // 判断返回值是不是多值类型
                 if (signature.returnsMany) {
@@ -54,23 +55,23 @@ public class MapperMethod {
                     result = sqlSession.selectOne(command.getName(), param);
                 }
                 break;
-
-            case SqlCommandType.DELETE:
-                // todo
+            case SqlCommandType.DELETE: {
+                Object param = signature.convertArgsToSqlCommandParam(args);
+                result = sqlSession.delete(command.getName(), param);
                 break;
-
+            }
             default:
-                throw new RuntimeException("....");
+                throw new RuntimeException("Unknown execution method for: " + command.getName());
         }
-        // 如果返回类型为基本类型，单返回值为null，需要抛出异常
+        // 如果返回类型为基本类型，但返回值为null，需要抛出异常
         if (Objects.isNull(result) && signature.returnsType.isPrimitive()) {
-            throw new RuntimeException("");
+            throw new RuntimeException("Attempted to return null from a method with a primitive return type (" + signature.returnsType + ")");
         }
        return result;
     }
 
     /**
-     * todo 针对多值的处理
+     * 执行查询返回多值结果
      * @param sqlSession
      * @param args
      * @param <E>
@@ -79,15 +80,14 @@ public class MapperMethod {
     private <E> Object executeForMany(SqlSession sqlSession, Object[] args) {
         List<E> result;
         Object param = signature.convertArgsToSqlCommandParam(args);
-
         result = sqlSession.selectList(command.getName(), param);
-
         return result;
     }
 
     /**
-     * name SQL语句的名称
-     * type SQL语句的类型，INSERT，UPDATE，DELETE，SELECT
+     * SQL 语句信息
+     * name: SQL 语句的名称
+     * type: SQL 语句的类型（INSERT, UPDATE, DELETE, SELECT）
      */
     public static class SqlCommand {
         private final String name;
@@ -105,13 +105,12 @@ public class MapperMethod {
                 }
             }
             if (Objects.isNull(ms)) {
-                throw new RuntimeException();
-            } else {
-                name = ms.getId();
-                type = ms.getSqlCommandType();
-                if (Objects.isNull(type)) {
-                    throw new RuntimeException();
-                }
+                throw new BindingException("Invalid bound statement (not found): " + statementName);
+            }
+            name = ms.getId();
+            type = ms.getSqlCommandType();
+            if (Objects.isNull(type)) {
+                throw new BindingException("SQL command type is null for statement: " + statementName);
             }
         }
 
@@ -161,13 +160,12 @@ public class MapperMethod {
         }
 
         /**
-         * todo 后续会将参数转换移到这里, 增加多个参数的处理
-         *
-         * @param args
-         * @return
+         * 将方法参数转换为 SQL 参数
+         * @param args 方法参数数组
+         * @return SQL 参数对象
          */
         public Object convertArgsToSqlCommandParam(Object[] args) {
-            return args[0];
+            return paramNameResolver.convertArgsToSqlCommandParam(args);
         }
     }
 }

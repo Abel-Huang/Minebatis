@@ -9,15 +9,13 @@ import java.util.*;
  * @date 2020/8/6 13:50
  */
 public class DefaultSqlSession implements SqlSession {
-    private Executor executor;
-    private Configuration configuration;
 
-    /**
-     * @param configuration
-     */
-    public DefaultSqlSession(Configuration configuration) {
-        this.executor = configuration.newExecutor();
+    private final Executor executor;
+    private final Configuration configuration;
+
+    public DefaultSqlSession(Configuration configuration, Executor executor) {
         this.configuration = configuration;
+        this.executor = executor;
     }
 
     @Override
@@ -28,7 +26,6 @@ public class DefaultSqlSession implements SqlSession {
     @Override
     public <T> T selectOne(String statement, Object parameter) {
         List<T> list = this.selectList(statement, parameter);
-        // 返回正确的结果
         if (list.size() == 1) {
             return list.get(0);
         } else if (list.size() > 1) {
@@ -54,20 +51,60 @@ public class DefaultSqlSession implements SqlSession {
         return new ArrayList<>();
     }
 
-    /**
-     * 获得Mapper
-     * @param type
-     * @param <T>
-     * @return
-     */
+    @Override
+    public int insert(String statement) {
+        return insert(statement, null);
+    }
+
+    @Override
+    public int insert(String statement, Object parameter) {
+        return update(statement, parameter);
+    }
+
+    @Override
+    public int update(String statement) {
+        return update(statement, null);
+    }
+
+    @Override
+    public int update(String statement, Object parameter) {
+        try {
+            MappedStatement ms = configuration.getMappedStatement(statement);
+            return executor.update(ms, parameter);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
+    public int delete(String statement) {
+        return delete(statement, null);
+    }
+
+    @Override
+    public int delete(String statement, Object parameter) {
+        return update(statement, parameter);
+    }
+
     @Override
     public <T> T getMapper(Class<T> type) {
         return configuration.getMapper(type, this);
     }
 
     @Override
-    public void close() {
+    public void commit() {
+        executor.commit();
+    }
 
+    @Override
+    public void rollback() {
+        executor.rollback();
+    }
+
+    @Override
+    public void close() {
+        executor.close();
     }
 
     @Override

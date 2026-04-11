@@ -16,7 +16,23 @@ public interface SqlSession extends Closeable {
 
     <T> List<T> selectList(String statement, Object parameter);
 
+    int insert(String statement);
+
+    int insert(String statement, Object parameter);
+
+    int update(String statement);
+
+    int update(String statement, Object parameter);
+
+    int delete(String statement);
+
+    int delete(String statement, Object parameter);
+
     <T> T getMapper(Class<T> type);
+
+    void commit();
+
+    void rollback();
 
     @Override
     void close();

@@ -1,5 +1,6 @@
 package cn.abelib.minebatis.mapping;
 
+import cn.abelib.minebatis.cache.Cache;
 import cn.abelib.minebatis.session.Configuration;
 
 import java.util.Map;
@@ -9,11 +10,8 @@ import java.util.Map;
  * @date 2020/8/17 14:46
  * 用于存放映射SQL节点的属性(每个SQL Node对应一个MappedStatement)
  */
-
 public class MappedStatement {
-    /**
-     * 节点的id属性 + 命名空间namespace
-     */
+
     private Configuration configuration;
     private String id;
     private String sql;
@@ -21,7 +19,7 @@ public class MappedStatement {
     private Map<Integer, String> parameter;
     private String parameterType;
     private String resultType;
-
+    private Cache cache;
 
     private MappedStatement() {
         // private constructor
@@ -75,10 +73,14 @@ public class MappedStatement {
         return sqlCommandType;
     }
 
-    /**
-     * todo
-     * @return
-     */
+    public Cache getCache() {
+        return cache;
+    }
+
+    public void setCache(Cache cache) {
+        this.cache = cache;
+    }
+
     public int getFetchSize() {
         return 100;
     }
@@ -87,7 +89,7 @@ public class MappedStatement {
      * MappedStatement的建造者模式
      */
     public static class Builder {
-        private MappedStatement mappedStatement = new MappedStatement();
+        private final MappedStatement mappedStatement = new MappedStatement();
 
         public Builder(Configuration configuration, String id,
                        String sqlCommandType, String sql,
@@ -100,6 +102,11 @@ public class MappedStatement {
             mappedStatement.parameter = parameter;
             mappedStatement.parameterType = parameterType;
             mappedStatement.resultType = resultType;
+        }
+
+        public Builder cache(Cache cache) {
+            mappedStatement.cache = cache;
+            return this;
         }
 
         public MappedStatement build() {

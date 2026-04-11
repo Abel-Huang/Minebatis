@@ -1,6 +1,8 @@
 package cn.abelib.minebatis.session;
 
 import cn.abelib.minebatis.binding.MapperRegistry;
+import cn.abelib.minebatis.cache.Cache;
+import cn.abelib.minebatis.executor.CachingExecutor;
 import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.executor.SimpleExecutor;
 import cn.abelib.minebatis.executor.parameter.DefaultParameterHandler;
@@ -10,6 +12,8 @@ import cn.abelib.minebatis.executor.resultset.ResultSetHandler;
 import cn.abelib.minebatis.executor.statement.SimpleStatementHandler;
 import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.executor.statement.StatementHandler;
+import cn.abelib.minebatis.transaction.JdbcTransaction;
+import cn.abelib.minebatis.transaction.Transaction;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -26,10 +30,12 @@ public class Configuration {
     private boolean cacheEnabled;
     private Map<String, MappedStatement> mappedStatements;
     private MapperRegistry mapperRegistry;
+    private Map<String, Cache> caches;
 
     public Configuration() {
         mapperRegistry = new MapperRegistry();
         mappedStatements = new HashMap<>();
+        caches = new HashMap<>();
     }
 
     public void setDataSource(Map<String, String> dataSource) {
@@ -42,7 +48,6 @@ public class Configuration {
     }
 
     /**
-     * todo 后续需要自定义连接池类
      * 创建数据库连接
      * @return
      */
@@ -59,12 +64,6 @@ public class Configuration {
         return mappedStatements.get(id);
     }
 
-    /**
-     * todo
-     * @param ms
-     * @param parameter
-     * @return
-     */
     public StatementHandler newStatementHandler(MappedStatement ms, Object parameter) throws ClassNotFoundException {
         return new SimpleStatementHandler(ms, parameter);
     }
@@ -78,15 +77,14 @@ public class Configuration {
     }
 
     /**
-     *  todo
-     *  cacheing
-     * 仅支持SimpleExecutor
-     * @return
+     * 创建执行器
+     * @param transaction 事务
+     * @return Executor
      */
-    public Executor newExecutor() {
-        Executor executor = new SimpleExecutor();
+    public Executor newExecutor(Transaction transaction) {
+        Executor executor = new SimpleExecutor(transaction);
         if (cacheEnabled) {
-            //executor = new CachingExecutor(executor);
+            executor = new CachingExecutor(executor);
         }
         return executor;
     }
@@ -95,16 +93,16 @@ public class Configuration {
         this.cacheEnabled = cacheEnabled;
     }
 
+    public boolean isCacheEnabled() {
+        return cacheEnabled;
+    }
+
     public boolean hasMapper(Class<?> type) {
         return mapperRegistry.hasMapper(type);
     }
 
-    /**
-     * todo unuse now
-     * @param namespace
-     */
     public void addLoadedResource(String namespace) {
-
+        // 用于防止重复加载
     }
 
     public void addMappedStatement(MappedStatement ms) {
@@ -136,5 +134,31 @@ public class Configuration {
      */
     public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameter) {
         return new DefaultParameterHandler(mappedStatement, parameter);
+    }
+
+    /**
+     * 添加二级缓存
+     * @param namespace 命名空间
+     * @param cache 缓存实例
+     */
+    public void addCache(String namespace, Cache cache) {
+        caches.put(namespace, cache);
+    }
+
+    /**
+     * 获取二级缓存
+     * @param namespace 命名空间
+     * @return 缓存实例
+     */
+    public Cache getCache(String namespace) {
+        return caches.get(namespace);
+    }
+
+    /**
+     * 创建新事务
+     * @return Transaction
+     */
+    public Transaction newTransaction() {
+        return new JdbcTransaction(this);
     }
 }
