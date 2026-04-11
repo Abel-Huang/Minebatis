@@ -4,6 +4,8 @@ import cn.abelib.minebatis.executor.parameter.ParameterHandler;
 import cn.abelib.minebatis.executor.resultset.ResultSetHandler;
 import cn.abelib.minebatis.mapping.MappedStatement;
 import cn.abelib.minebatis.session.Configuration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.List;
@@ -14,6 +16,8 @@ import java.util.List;
  * 简单 Statement 处理器实现
  */
 public class SimpleStatementHandler implements StatementHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(SimpleStatementHandler.class);
 
     private final MappedStatement mappedStatement;
     private final ParameterHandler parameterHandler;
@@ -49,9 +53,9 @@ public class SimpleStatementHandler implements StatementHandler {
             statement.setFetchSize(mappedStatement.getFetchSize());
             return statement;
         } catch (SQLException e) {
-            e.printStackTrace();
+            log.error("Failed to prepare statement for SQL: {}", mappedStatement.getSql(), e);
+            throw new RuntimeException("Failed to prepare statement", e);
         }
-        return null;
     }
 
     @Override

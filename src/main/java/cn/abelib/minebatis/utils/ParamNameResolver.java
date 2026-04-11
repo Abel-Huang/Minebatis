@@ -1,6 +1,8 @@
 package cn.abelib.minebatis.utils;
 
 import cn.abelib.minebatis.io.Resources;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Method;
 import java.util.*;
@@ -12,6 +14,8 @@ import java.util.*;
  */
 public class ParamNameResolver {
 
+    private static final Logger log = LoggerFactory.getLogger(ParamNameResolver.class);
+
     private static final String PARAMETER_CLASS = "java.lang.reflect.Parameter";
     private static Method GET_PARAMS;
     private static Method GET_NAME;
@@ -22,7 +26,7 @@ public class ParamNameResolver {
             GET_PARAMS = Method.class.getMethod("getParameters");
             GET_NAME = paramClass.getMethod("getName");
         } catch (Exception e) {
-            // ignore
+            log.warn("Failed to initialize parameter reflection, parameter names may not be available", e);
         }
     }
 
@@ -51,7 +55,7 @@ public class ParamNameResolver {
                 map.put(idx, name);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn("Failed to resolve parameter names for method: {}", method.getName(), e);
         }
         this.names = Collections.unmodifiableSortedMap(map);
         this.paramCount = count;

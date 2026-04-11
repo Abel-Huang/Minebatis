@@ -17,7 +17,12 @@ public class JdbcTransaction implements Transaction {
     private boolean autoCommit;
 
     public JdbcTransaction(Configuration configuration) {
+        this(configuration, false);
+    }
+
+    public JdbcTransaction(Configuration configuration, boolean autoCommit) {
         this.configuration = configuration;
+        this.autoCommit = autoCommit;
     }
 
     public JdbcTransaction(Connection connection) {
@@ -60,5 +65,12 @@ public class JdbcTransaction implements Transaction {
             connection.close();
             connection = null;
         }
+    }
+
+    /**
+     * 获取自动提交状态
+     */
+    public boolean isAutoCommit() {
+        return autoCommit;
     }
 }

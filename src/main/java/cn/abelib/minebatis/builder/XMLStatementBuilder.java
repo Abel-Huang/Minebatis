@@ -9,7 +9,10 @@ import cn.abelib.minebatis.mapping.SqlCommandType;
 import org.dom4j.Document;
 import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import java.io.Reader;
 import java.util.HashMap;
@@ -25,6 +28,7 @@ import java.util.regex.Pattern;
  */
 public class XMLStatementBuilder {
 
+    private static final Logger log = LoggerFactory.getLogger(XMLStatementBuilder.class);
     private static final String SQL_PATTERN = "(#\\{(.*?)})";
 
     private final Configuration configuration;
@@ -36,13 +40,28 @@ public class XMLStatementBuilder {
     }
 
     /**
+     * 创建 SAXReader，禁用外部 DTD 加载
+     */
+    private SAXReader createSAXReader() {
+        SAXReader reader = new SAXReader();
+        try {
+            reader.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
+            reader.setFeature("http://xml.org/sax/features/external-general-entities", false);
+            reader.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        } catch (SAXException e) {
+            log.warn("Failed to configure SAXReader security features", e);
+        }
+        return reader;
+    }
+
+    /**
      * 解析 Mapper XML 文件
      * @param resource 资源路径
      */
     public void parseStatementNode(String resource) {
         try {
             Reader reader = Resources.getResourceAsReader(resource);
-            SAXReader saxReader = new SAXReader();
+            SAXReader saxReader = createSAXReader();
             Document document = saxReader.read(new InputSource(reader));
             Element root = document.getRootElement();
 
@@ -56,7 +75,8 @@ public class XMLStatementBuilder {
             // 解析 SQL 语句
             parseStatements(root, namespace);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            log.error("Failed to parse mapper file: {}", resource, ex);
+            throw new RuntimeException("Failed to parse mapper file: " + resource, ex);
         }
     }
 

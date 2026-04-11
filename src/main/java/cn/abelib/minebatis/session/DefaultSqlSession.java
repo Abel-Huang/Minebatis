@@ -2,6 +2,9 @@ package cn.abelib.minebatis.session;
 
 import cn.abelib.minebatis.executor.Executor;
 import cn.abelib.minebatis.mapping.MappedStatement;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.*;
 
 /**
@@ -9,6 +12,8 @@ import java.util.*;
  * @date 2020/8/6 13:50
  */
 public class DefaultSqlSession implements SqlSession {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultSqlSession.class);
 
     private final Executor executor;
     private final Configuration configuration;
@@ -46,9 +51,9 @@ public class DefaultSqlSession implements SqlSession {
             MappedStatement ms = configuration.getMappedStatement(statement);
             return executor.query(ms, parameter);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Query failed for statement: {}", statement, e);
+            throw new RuntimeException("Query failed for statement: " + statement, e);
         }
-        return new ArrayList<>();
     }
 
     @Override
@@ -72,9 +77,9 @@ public class DefaultSqlSession implements SqlSession {
             MappedStatement ms = configuration.getMappedStatement(statement);
             return executor.update(ms, parameter);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Update failed for statement: {}", statement, e);
+            throw new RuntimeException("Update failed for statement: " + statement, e);
         }
-        return 0;
     }
 
     @Override

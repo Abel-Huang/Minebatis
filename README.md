@@ -1,6 +1,6 @@
 # Minebatis
 
-一个轻量级的 MyBatis 框架实现，用于学习 MyBatis 核心原理。实现了完整的 CRUD 操作、事务支持、缓存机制、参数处理、结果集映射等核心功能。
+一个轻量级的 MyBatis 框架实现，用于学习 MyBatis 核心原理。实现了完整的 CRUD 操作、事务支持、一级/二级缓存、参数处理、结果集映射等核心功能。
 
 ## 功能特性
 
@@ -9,9 +9,12 @@
 - **多参数支持**: 支持多参数 Mapper 方法，自动转换为 Map
 - **参数类型转换**: 支持 Date、BigDecimal、Boolean 等多种类型自动转换
 - **结果集映射**: 自动映射、下划线转驼峰、类型自动转换
-- **事务支持**: commit/rollback 事务管理
-- **二级缓存**: 跨 Session 的 namespace 级别缓存
+- **事务支持**: commit/rollback 事务管理，支持 autoCommit 配置
+- **一级缓存**: Session 级别缓存，提升查询性能
+- **二级缓存**: 跨 Session 的 namespace 级别缓存，事务安全
 - **LRU 缓存**: 支持最近最少使用淘汰策略
+- **数据源接口**: 支持注入第三方连接池（HikariCP、Druid 等）
+- **日志框架**: SLF4J + Logback，完善的日志记录
 - **配置解析**: dom4j 解析 MyBatis 配置文件
 
 ## 项目架构
@@ -37,9 +40,13 @@ cn.abelib.minebatis
 │   ├── PerpetualCache          # 永久缓存实现
 │   └── LruCache                # LRU 缓存装饰器
 │
+├── datasource                  # 数据源模块
+│   ├── DataSource              # 数据源接口
+│   └── UnpooledDataSource      # 非池化数据源
+│
 ├── executor                    # 执行器模块
 │   ├── Executor                # 执行器接口
-│   ├── SimpleExecutor          # 简单执行器
+│   ├── SimpleExecutor          # 简单执行器（含一级缓存）
 │   ├── CachingExecutor         # 二级缓存执行器
 │   ├── parameter/
 │   │   ├── ParameterHandler            # 参数处理器接口
@@ -120,9 +127,8 @@ public interface Transaction {
 }
 
 // 使用示例
-SqlSession session = sqlSessionFactory.openSession();
+SqlSession session = sqlSessionFactory.openSession(false);  // 手动提交
 try {
-    // 执行数据库操作
     mapper.insert(user);
     session.commit();  // 提交事务
 } catch (Exception e) {
@@ -130,18 +136,25 @@ try {
 } finally {
     session.close();
 }
+
+// 自动提交模式
+SqlSession session = sqlSessionFactory.openSession(true);  // 自动提交
 ```
 
 ### 4. 缓存机制
 
 ```
 一级缓存（Session 级别）
-└── 同一 SqlSession 中相同查询直接返回缓存
+├── 同一 SqlSession 中相同查询直接返回缓存
+├── 基于 PerpetualCache 实现（HashMap）
+├── 更新操作自动清除缓存
+└── commit/rollback/close 时清除缓存
 
 二级缓存（namespace 级别）
 ├── 跨 SqlSession 共享
 ├── 通过 <cache/> 标签启用
-└── 更新操作自动清除缓存
+├── 更新操作自动清除缓存
+└── 事务安全：commit 时写入缓存，rollback 时丢弃
 
 Cache 实现
 ├── PerpetualCache      # 永久缓存（基于 HashMap）
@@ -258,8 +271,8 @@ public class MybatisExample {
         // 2. 构建 SqlSessionFactory
         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(inputStream);
 
-        // 3. 获取 SqlSession
-        SqlSession session = sqlSessionFactory.openSession();
+        // 3. 获取 SqlSession（手动提交模式）
+        SqlSession session = sqlSessionFactory.openSession(false);
 
         // 方式一：通过 Mapper 接口（推荐）
         StudentMapper mapper = session.getMapper(StudentMapper.class);
@@ -275,13 +288,6 @@ public class MybatisExample {
         newStudent.setName("李四");
         newStudent.setAge(22);
         mapper.insert(newStudent);
-
-        // 更新
-        student.setName("王五");
-        mapper.update(student);
-
-        // 删除
-        mapper.deleteById(1L);
 
         // 提交事务
         session.commit();
@@ -330,6 +336,30 @@ List<Student> findByNameAndAge(String name, Integer age);
 // 数据库返回 Timestamp，实体字段是 Date → 自动转换
 ```
 
+### 数据源配置
+
+```java
+// 方式一：XML 配置（自动创建 UnpooledDataSource）
+// 见上方 mybatis-config.xml 配置示例
+
+// 方式二：代码配置 UnpooledDataSource
+Configuration config = new Configuration();
+config.setDataSource(new UnpooledDataSource(
+    "com.mysql.jdbc.Driver",
+    "jdbc:mysql://localhost:3306/mydb",
+    "root",
+    "password"
+));
+
+// 方式三：注入第三方连接池（HikariCP、Druid 等）
+HikariDataSource hikariDataSource = new HikariDataSource();
+hikariDataSource.setJdbcUrl("jdbc:mysql://localhost:3306/mydb");
+// ... 其他配置
+
+// 实现 DataSource 接口即可接入
+config.setDataSource(new ThirdPartyDataSourceAdapter(hikariDataSource));
+```
+
 ## 测试覆盖
 
 | 测试类 | 测试数 | 覆盖内容 |
@@ -337,9 +367,13 @@ List<Student> findByNameAndAge(String name, Integer age);
 | `DefaultParameterHandlerTest` | 8 | 参数类型转换、多参数、Map参数 |
 | `DefaultResultSetHandlerTest` | 6 | 结果映射、下划线转驼峰、类型转换 |
 | `CacheTest` | 16 | PerpetualCache、LruCache、CacheKey |
+| `SimpleExecutorTest` | 9 | 一级缓存命中/清除、CacheKey生成 |
+| `CachingExecutorTest` | 6 | 二级缓存事务、commit/rollback逻辑 |
 | `SqlSessionTest` | 12 | CRUD操作、事务、Mapper代理 |
+| `SqlSessionFactoryTest` | 6 | openSession、autoCommit参数 |
 | `XMLConfigBuilderTest` | 4 | 配置解析、MappedStatement注册 |
-| **总计** | **46** | **100% 通过率** |
+| `UnpooledDataSourceTest` | 4 | 数据源配置、属性设置 |
+| **总计** | **71** | **100% 通过率** |
 
 ## 已实现功能
 
@@ -351,22 +385,23 @@ List<Student> findByNameAndAge(String name, Integer age);
 | INSERT 操作 | ✅ | 返回影响行数 |
 | UPDATE 操作 | ✅ | 返回影响行数 |
 | DELETE 操作 | ✅ | 返回影响行数 |
-| 多参数支持 | ✅ | 自动转 Map |
+| 多参数支持 | ✅ | 自动转 Map，支持 param1/param2 |
 | 参数类型转换 | ✅ | Date/BigDecimal/Boolean 等 |
 | 结果集映射 | ✅ | 自动映射 |
 | 下划线转驼峰 | ✅ | user_name → userName |
 | 类型自动转换 | ✅ | Integer→Long, BigDecimal→Double |
-| 事务支持 | ✅ | commit/rollback |
-| 二级缓存 | ✅ | 跨 Session 共享 |
+| 事务支持 | ✅ | commit/rollback，支持 autoCommit |
+| 一级缓存 | ✅ | Session 级别缓存 |
+| 二级缓存 | ✅ | 跨 Session 共享，事务安全 |
 | LRU 缓存 | ✅ | 最近最少使用淘汰 |
 | 缓存键生成 | ✅ | SQL + 参数 |
+| 数据源接口 | ✅ | 支持注入第三方连接池 |
+| 日志框架 | ✅ | SLF4J + Logback |
 
 ## 待实现功能
 
 | 功能 | 优先级 | 状态 |
 |------|--------|------|
-| 一级缓存 | 高 | TODO |
-| 连接池 | 高 | TODO |
 | 动态 SQL (`<if>`, `<where>`) | 中 | TODO |
 | ResultMap | 中 | TODO |
 | TypeHandler | 低 | TODO |
@@ -394,10 +429,10 @@ mvn exec:java -Dexec.mainClass="cn.abelib.example.MybatisExample"
 
 | 指标 | 数值 |
 |------|------|
-| 源代码行数 | ~2,600 行 |
-| 测试代码行数 | ~1,000 行 |
-| Java 文件数 | 40 个 |
-| 测试方法数 | 46 个 |
+| 源代码行数 | ~3,100 行 |
+| 测试代码行数 | ~1,500 行 |
+| Java 文件数 | 44 个 |
+| 测试方法数 | 71 个 |
 
 ## 技术栈
 
@@ -407,7 +442,7 @@ mvn exec:java -Dexec.mainClass="cn.abelib.example.MybatisExample"
 - MySQL Connector 5.1.46
 - JUnit 4.13.2
 - Mockito 4.11.0
-- Lombok
+- SLF4J + Logback (日志)
 - Guava
 
 ## 参考资料
